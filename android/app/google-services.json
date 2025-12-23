@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "23623182966",
+    "project_id": "libraryprofile-aacfd",
+    "storage_bucket": "libraryprofile-aacfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23623182966:android:dd5b5897d910622921cd57",
+        "android_client_info": {
+          "package_name": "com.example.loopx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "23623182966-7ks82t3r68hbrdi3ov3ql7btuuv9cboq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTVaEpdk8P1iTIKPuJSfCg9DA_bL9sPD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23623182966-7ks82t3r68hbrdi3ov3ql7btuuv9cboq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
