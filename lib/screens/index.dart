@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'signup.dart';
+import '../widgets/app_logo.dart';
 
 class SecondPage extends StatelessWidget {
   const SecondPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.surface,
+
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
           'LOOPX',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -24,65 +28,48 @@ class SecondPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 32),
-              Image.asset('assets/img/logo.png', width: 340),
+
+              const AppLogo(),
+
               const SizedBox(height: 24),
-              const Text(
+
+              Text(
                 'Welcome to LoopX',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colors.onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 24),
-              const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.check, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Build real skills with a clear learning path',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ],
+
+              _FeatureItem(
+                text: 'Build real skills with a clear learning path',
               ),
               const SizedBox(height: 12),
-              const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.check, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Apply your knowledge through practical projects',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ],
+              _FeatureItem(
+                text: 'Apply your knowledge through practical projects',
               ),
               const SizedBox(height: 12),
-              const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.check, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Showcase your achievements and get discovered by companies',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ],
+              _FeatureItem(
+                text:
+                    'Showcase your achievements and get discovered by companies',
               ),
+
               const SizedBox(height: 24),
-              const Text(
+
+              Text(
                 'What are you waiting for? Start your journey!',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                style: TextStyle(
+                  color: colors.onSurface.withValues(alpha: 0.7),
+                  fontSize: 16,
+                ),
               ),
+
               const Spacer(),
+
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -90,14 +77,12 @@ class SecondPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const SignupPage(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SignupPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: colors.surface,
+                    foregroundColor: colors.onSurface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -108,11 +93,38 @@ class SecondPage extends StatelessWidget {
                   ),
                 ),
               ),
+
               const SizedBox(height: 24),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 🔹 Feature bullet item (Reusable & theme-aware)
+class _FeatureItem extends StatelessWidget {
+  final String text;
+
+  const _FeatureItem({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.check, color: Colors.green, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: colors.onSurface, fontSize: 16),
+          ),
+        ),
+      ],
     );
   }
 }
