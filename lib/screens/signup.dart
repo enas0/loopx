@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/auth_label.dart';
+import '../widgets/auth_field.dart';
+import '../widgets/auth_button.dart';
+import 'login_page.dart';
+import 'home_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -10,69 +13,12 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _majorController = TextEditingController();
-  final _universityController = TextEditingController();
-
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _majorController.dispose();
-    _universityController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      // 1️⃣ Firebase Auth
-      final userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
-
-      final uid = userCredential.user!.uid;
-
-      // 2️⃣ Firestore
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'fullName': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'major': _majorController.text.trim(),
-        'university': _universityController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully')),
-      );
-    } on FirebaseAuthException catch (e) {
-      String message = 'Something went wrong';
-      if (e.code == 'email-already-in-use') {
-        message = 'Email already in use';
-      } else if (e.code == 'weak-password') {
-        message = 'Password is too weak';
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _goToHome() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomePage()),
+      (_) => false,
+    );
   }
 
   @override
@@ -80,177 +26,132 @@ class _SignupPageState extends State<SignupPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: colors.onSurface,
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Sign Up',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: colors.surface),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'SIGN UP',
+          style: TextStyle(
+            color: colors.surface,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 32),
 
-                Text(
-                  'Create your account',
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
+                decoration: BoxDecoration(
+                  // 🔑 نفس Login: الكارد فاتح
+                  color: colors.surface,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(36),
+                    topRight: Radius.circular(36),
                   ),
                 ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AuthLabel('First Name'),
+                      const AuthField(hint: 'name'),
 
-                const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+                      const AuthLabel('Last Name'),
+                      const AuthField(hint: 'name'),
 
-                _ThemedTextField(
-                  label: 'Full Name',
-                  controller: _nameController,
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Name is required'
-                      : null,
-                ),
+                      const SizedBox(height: 20),
+                      const AuthLabel('Email'),
+                      const AuthField(hint: 'user@gmail.com'),
 
-                const SizedBox(height: 16),
+                      const SizedBox(height: 20),
+                      const AuthLabel('Password'),
+                      const AuthField(hint: 'password', obscure: true),
 
-                _ThemedTextField(
-                  label: 'Email',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Email is required';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
+                      const SizedBox(height: 20),
+                      const AuthLabel('Confirm Password'),
+                      const AuthField(hint: '*******', obscure: true),
 
-                const SizedBox(height: 16),
+                      const SizedBox(height: 32),
 
-                _ThemedTextField(
-                  label: 'Password',
-                  controller: _passwordController,
-                  obscure: true,
-                  validator: (value) {
-                    if (value == null || value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _ThemedTextField(
-                  label: 'Major',
-                  controller: _majorController,
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Major is required'
-                      : null,
-                ),
-
-                const SizedBox(height: 16),
-
-                _ThemedTextField(
-                  label: 'University',
-                  controller: _universityController,
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'University is required'
-                      : null,
-                ),
-
-                const SizedBox(height: 32),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _signUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(strokeWidth: 2)
-                        : const Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _goToHome,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.onSurface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(32),
                             ),
                           ),
+                          child: Text(
+                            'SIGN UP',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: colors.surface,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LoginPage(),
+                              ),
+                            );
+                          },
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: 'Already have an account? ',
+                                ),
+                                TextSpan(
+                                  text: 'Log in',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: colors.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: TextStyle(
+                              color: colors.onSurface.withAlpha(200),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 🔹 Reusable themed TextFormField
-class _ThemedTextField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final bool obscure;
-  final String? Function(String?)? validator;
-  final TextInputType keyboardType;
-
-  const _ThemedTextField({
-    required this.label,
-    required this.controller,
-    this.obscure = false,
-    this.validator,
-    this.keyboardType = TextInputType.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return TextFormField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(color: colors.onSurface),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: colors.onSurface.withValues(alpha: 0.7)),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: colors.onSurface.withValues(alpha: 0.3),
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: colors.primary),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: colors.error),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: colors.error),
-          borderRadius: BorderRadius.circular(12),
+          ],
         ),
       ),
     );

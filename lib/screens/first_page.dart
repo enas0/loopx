@@ -16,12 +16,12 @@ class FirstPage extends StatelessWidget {
           children: [
             const Spacer(),
 
-            // 🔹 Logo
+            // Logo
             const AppLogo(),
 
             const Spacer(),
 
-            // 🔹 Start Button
+            //  Start Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(

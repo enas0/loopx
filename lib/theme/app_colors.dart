@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const lightBackground = Colors.white;
-  static const darkBackground = Colors.black;
-
+  // ===== LIGHT MODE =====
+  static const lightBackground = Color(0xFFFFFFFF);
   static const lightSurface = Color(0xFFF2F2F7);
-  static const darkSurface = Colors.white;
+  static const lightText = Color(0xFF000000);
 
-  static const lightText = Colors.black;
-  static const darkText = Colors.white;
+  // ===== DARK MODE =====
+  static const darkBackground = Color(0xFF0F1115);
+  static const darkSurface = Color(0xFF1C1E22);
+  static const darkText = Color(0xFFFFFFFF);
 }

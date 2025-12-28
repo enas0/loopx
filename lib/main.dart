@@ -7,7 +7,7 @@ import 'screens/first_page.dart';
 
 // 🔹 Theme controller (System / Light / Dark)
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(
-  ThemeMode.system,
+  ThemeMode.dark,
 );
 
 void main() async {

@@ -1,46 +1,73 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
 
+/// ================= LIGHT THEME =================
 final ThemeData lightTheme = ThemeData(
+  useMaterial3: true,
   brightness: Brightness.light,
 
-  scaffoldBackgroundColor: AppColors.lightBackground,
-
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    foregroundColor: AppColors.lightText,
-  ),
+  scaffoldBackgroundColor: Colors.white,
 
   colorScheme: const ColorScheme.light(
-    surface: AppColors.lightSurface,
-    onSurface: AppColors.lightText,
-  ),
+    surface: Colors.white,
 
-  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    selectedItemColor: AppColors.lightText,
-    unselectedItemColor: AppColors.lightText,
-  ),
-);
+    primary: Colors.black,
+    onPrimary: Colors.white,
 
-final ThemeData darkTheme = ThemeData(
-  brightness: Brightness.dark,
-
-  scaffoldBackgroundColor: AppColors.darkBackground,
-
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    foregroundColor: AppColors.darkText,
-  ),
-
-  colorScheme: const ColorScheme.dark(
-    surface: AppColors.darkSurface,
     onSurface: Colors.black,
   ),
 
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    foregroundColor: Colors.black,
+  ),
+
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    selectedItemColor: AppColors.darkText,
-    unselectedItemColor: AppColors.darkText,
+    backgroundColor: Colors.white,
+    selectedItemColor: Colors.black,
+    unselectedItemColor: Colors.black,
+  ),
+
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+    ),
+  ),
+);
+
+/// ================= DARK THEME =================
+final ThemeData darkTheme = ThemeData(
+  useMaterial3: true,
+  brightness: Brightness.dark,
+
+  scaffoldBackgroundColor: const Color(0xFF0B0C0F),
+
+  colorScheme: const ColorScheme.dark(
+    surface: Color(0xFF0B0C0F),
+
+    primary: Colors.white,
+    onPrimary: Colors.black,
+
+    onSurface: Colors.white,
+  ),
+
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    foregroundColor: Colors.white,
+  ),
+
+  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    backgroundColor: Color(0xFF0B0C0F),
+    selectedItemColor: Colors.white,
+    unselectedItemColor: Colors.white,
+  ),
+
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+    ),
   ),
 );
