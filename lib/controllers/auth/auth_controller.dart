@@ -8,7 +8,7 @@ class AuthController extends ChangeNotifier {
   String? errorMessage;
   String? successMessage;
 
-  // 🔐 LOGIN
+  //  LOGIN
   Future<bool> login(String email, String password) async {
     _startLoading();
 
@@ -24,7 +24,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  // 🔑 FORGOT PASSWORD
+  //  FORGOT PASSWORD
   Future<void> resetPassword(String email) async {
     _startLoading();
 
