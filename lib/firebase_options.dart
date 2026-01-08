@@ -87,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'libraryprofile-aacfd.firebasestorage.app',
     measurementId: 'G-X734JFHFQB',
   );
+
 }

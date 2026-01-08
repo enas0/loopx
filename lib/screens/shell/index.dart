@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'signup.dart';
-import '../widgets/app_logo.dart';
+import '../auth/signup.dart';
+import '../../widgets/app_logo.dart';
 
 class SecondPage extends StatelessWidget {
   const SecondPage({super.key});
@@ -81,8 +81,8 @@ class SecondPage extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.surface,
-                    foregroundColor: colors.onSurface,
+                    backgroundColor: colors.onSurface,
+                    foregroundColor: colors.surface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),

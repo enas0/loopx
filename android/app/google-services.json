@@ -29,6 +29,13 @@
             {
               "client_id": "23623182966-7ks82t3r68hbrdi3ov3ql7btuuv9cboq.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "23623182966-r3mi6biadrsu6g7gdrbbl33d9fo1fm4g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.loopx"
+              }
             }
           ]
         }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+
+import '../../widgets/app_bottom_nav.dart';
 
 class CoursesPage extends StatelessWidget {
   const CoursesPage({super.key});
@@ -61,30 +62,8 @@ class CoursesPage extends StatelessWidget {
         ],
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomePage()),
-            );
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-
-        backgroundColor: colors.surface,
-        selectedItemColor: colors.primary,
-        unselectedItemColor: colors.onSurfaceVariant,
-
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.send), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
+      /// ✅ BottomNav Widget (Courses = index 2)
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 
