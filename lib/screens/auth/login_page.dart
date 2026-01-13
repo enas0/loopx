@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../controllers/auth/auth_controller.dart';
 import '../../services/validators.dart';
 import '../home/home_page.dart';
+import '../home/entry_page.dart';
+
 import 'signup.dart';
 
 class LoginPage extends StatefulWidget {
@@ -35,11 +37,10 @@ class _LoginPageState extends State<LoginPage> {
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-
     if (success && mounted) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const EntryPage()),
         (_) => false,
       );
     }

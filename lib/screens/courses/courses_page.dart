@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../widgets/app_bottom_nav.dart';
-import '../courses/pages/learning_path_page.dart';
+import 'package:loopx/screens/courses/page/course_map_page.dart';
+import 'package:loopx/widgets/app_bottom_nav.dart';
 
 class CoursesPage extends StatelessWidget {
   const CoursesPage({super.key});
@@ -11,122 +11,102 @@ class CoursesPage extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Courses')),
-
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            'Learning Paths',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Choose a path and start learning step by step',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          _pathCard(
-            context,
-            icon: Icons.code,
-            title: 'Web Development',
-            description: 'HTML • CSS • JavaScript • React',
-          ),
-          _pathCard(
-            context,
-            icon: Icons.smartphone,
-            title: 'Mobile Development',
-            description: 'Flutter • Android • iOS',
-          ),
-          _pathCard(
-            context,
-            icon: Icons.storage,
-            title: 'Backend Development',
-            description: 'Node.js • ASP.NET • Databases',
-          ),
-          _pathCard(
-            context,
-            icon: Icons.security,
-            title: 'Cyber Security',
-            description: 'Networks • Security Basics',
-          ),
-          _pathCard(
-            context,
-            icon: Icons.analytics,
-            title: 'Data Structures',
-            description: 'Algorithms • Problem Solving',
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text(
+          'Courses',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
       ),
 
-      /// Bottom Navigation
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
-    );
-  }
-
-  // LEARNING PATH CARD
-  Widget _pathCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => LearningPathPage(title: title)),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.outlineVariant),
-        ),
-        child: Row(
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 36, color: colors.primary),
-            const SizedBox(width: 16),
+            Text(
+              'Learning Path',
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
 
-            Expanded(
+            const SizedBox(height: 8),
+
+            Text(
+              'Follow a structured path and learn step by step',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: colors.outlineVariant),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Icon(Icons.map_outlined, size: 48, color: colors.primary),
+
+                  const SizedBox(height: 16),
+
                   Text(
-                    title,
+                    'Complete Course Map',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+
+                  const SizedBox(height: 8),
+
                   Text(
-                    description,
+                    'HTML • CSS • JavaScript • More',
                     style: textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CourseMapPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Start Learning',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: colors.onSurfaceVariant,
-            ),
           ],
         ),
       ),
+
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 }

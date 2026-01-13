@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:loopx/screens/courses/page/lesson_page.dart';
+
 import '../menu/menu_page.dart';
 import '../../widgets/app_bottom_nav.dart';
-import '../courses/luctures_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,44 +13,97 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  int selectedTab = 0;
+  final String track = 'frontend';
 
-  final List<Map<String, dynamic>> _courses = [
-    {
-      'title': 'Web Development',
-      'subtitle': 'HTML, CSS, JavaScript, React',
-      'icon': Icons.code,
-    },
-    {
-      'title': 'Mobile Development',
-      'subtitle': 'Flutter, Android, iOS',
-      'icon': Icons.smartphone,
-    },
-    {
-      'title': 'Backend & APIs',
-      'subtitle': 'Node.js, ASP.NET, Databases',
-      'icon': Icons.storage,
-    },
-  ];
+  late final AnimationController _heroController;
+  late final Animation<double> _heroAnimation;
+
+  final tabs = ['Technical', 'Soft Skills', 'Tools'];
+
+  final Map<String, List<Map<String, String>>> data = {
+    'Technical': [
+      {'title': 'HTML & CSS', 'desc': 'Layouts, responsive design'},
+      {'title': 'Bootstrap', 'desc': 'UI components'},
+      {'title': 'JavaScript', 'desc': 'Logic & async programming'},
+      {'title': 'React', 'desc': 'Components & hooks'},
+    ],
+    'Soft Skills': [
+      {'title': 'Communication', 'desc': 'Work with teams'},
+      {'title': 'Problem Solving', 'desc': 'Think like an engineer'},
+    ],
+    'Tools': [
+      {'title': 'Git & GitHub', 'desc': 'Version control'},
+      {'title': 'VS Code', 'desc': 'Daily workflow'},
+    ],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _heroController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _heroAnimation = CurvedAnimation(
+      parent: _heroController,
+      curve: Curves.easeOut,
+    );
+    _heroController.forward();
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _heroController.dispose();
     super.dispose();
   }
+
+  // ================= CONTINUE LEARNING LOGIC =================
+
+  Future<void> _continueLearning(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    // مستخدم جديد – ما عنده progress
+    if (!doc.exists || !doc.data()!.containsKey('progress')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LessonPage(courseId: 'html', lessonOrder: 1),
+        ),
+      );
+      return;
+    }
+
+    final progress = doc['progress'] as Map<String, dynamic>;
+    final String courseId = progress['courseId'];
+    final int lessonOrder = progress['lessonOrder'];
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            LessonPage(courseId: courseId, lessonOrder: lessonOrder),
+      ),
+    );
+  }
+
+  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final filteredCourses = _courses.where((course) {
-      final q = _searchQuery.toLowerCase();
-      return course['title'].toLowerCase().contains(q) ||
-          course['subtitle'].toLowerCase().contains(q);
-    }).toList();
+    final currentTab = tabs[selectedTab];
+    final currentItems = data[currentTab]!;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,85 +124,75 @@ class _HomePageState extends State<HomePage> {
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ///  LEARNING PATH
-            _learningPathCard(context),
-
-            const SizedBox(height: 32),
-
-            ///  SEARCH
-            TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: 'Search courses...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: colors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.outlineVariant),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.outlineVariant),
-                ),
+            // ================= HERO =================
+            FadeTransition(
+              opacity: _heroAnimation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.1),
+                  end: Offset.zero,
+                ).animate(_heroAnimation),
+                child: _heroCard(context),
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 36),
 
-            ///  CONTINUE LEARNING
+            // ================= TABS =================
+            _tabsRow(colors),
+
+            const SizedBox(height: 24),
+
+            // ================= COURSES =================
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                key: ValueKey(currentTab),
+                children: currentItems
+                    .map((item) => _courseCard(context, item))
+                    .toList(),
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // ================= GROW =================
             Text(
-              'Continue Learning',
+              'Grow beyond courses',
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            _continueLearningCard(
-              context,
-              image:
-                  'https://images.unsplash.com/photo-1587620962725-abab7fe55159',
-              title: 'JavaScript Advanced',
-              subtitle: 'Closures • Async • Performance',
-              progress: 0.6,
+            _bigActionCard(
+              icon: Icons.task_alt,
+              title: 'Plan your tasks',
+              desc: 'Organize your study goals and track progress.',
+            ),
+            _bigActionCard(
+              icon: Icons.business_center,
+              title: 'Company trainings',
+              desc: 'Explore internships and real opportunities.',
+            ),
+            _bigActionCard(
+              icon: Icons.emoji_events,
+              title: 'Hackathons',
+              desc: 'Compete, build projects and win prizes.',
             ),
 
-            _continueLearningCard(
-              context,
-              image:
-                  'https://images.unsplash.com/photo-1517694712202-14dd9538aa97',
-              title: 'React Fundamentals',
-              subtitle: 'Hooks • Components • State',
-              progress: 0.35,
-            ),
+            const SizedBox(height: 40),
 
-            const SizedBox(height: 32),
-
-            ///  EXPLORE
-            Text(
-              'Explore Tech Courses',
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            ...filteredCourses.map(
-              (course) => _exploreCard(
-                context,
-                icon: course['icon'],
-                title: course['title'],
-                subtitle: course['subtitle'],
+            Center(
+              child: Text(
+                'Consistency beats motivation.',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -157,56 +203,48 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //  COMPONENTS
+  // ================= COMPONENTS =================
 
-  Widget _learningPathCard(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
+  Widget _heroCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Colors.deepPurple, Colors.deepPurpleAccent],
+        ),
+        borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Learning Path',
-            style: textTheme.titleMedium?.copyWith(
+          const Text(
+            'Build your career, not just skills',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: colors.onPrimaryContainer,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            'Frontend Developer',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.onPrimaryContainer.withOpacity(0.8),
-            ),
+            track == 'frontend'
+                ? 'Frontend Engineer Path'
+                : 'Backend Engineer Path',
+            style: const TextStyle(color: Colors.white70),
           ),
-          const SizedBox(height: 16),
-
-          LinearProgressIndicator(
-            value: 0.45,
-            minHeight: 8,
-            backgroundColor: colors.surfaceVariant,
-            valueColor: AlwaysStoppedAnimation(colors.primary),
-          ),
-
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Continue Learning'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LucturesPage()),
-                );
-              },
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.deepPurple,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+              ),
+              onPressed: () => _continueLearning(context),
+              child: const Text('Continue Learning'),
             ),
           ),
         ],
@@ -214,120 +252,111 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _continueLearningCard(
-    BuildContext context, {
-    required String image,
-    required String title,
-    required String subtitle,
-    required double progress,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LucturesPage()),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.outlineVariant),
-        ),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+  Widget _tabsRow(ColorScheme colors) {
+    return SizedBox(
+      height: 46,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: tabs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) {
+          final selected = selectedTab == i;
+          return GestureDetector(
+            onTap: () => setState(() => selectedTab = i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              decoration: BoxDecoration(
+                color: selected ? Colors.deepPurple : colors.surface,
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: Image.network(
-                image,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
+              child: Text(
+                tabs[i],
+                style: TextStyle(
+                  color: selected ? Colors.white : colors.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _courseCard(BuildContext context, Map<String, String> item) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Theme.of(context).colorScheme.surface,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.school, color: Colors.deepPurple),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item['title']!,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(item['desc']!, style: textTheme.bodySmall),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bigActionCard({
+    required IconData icon,
+    required String title,
+    required String desc,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(26),
+      onTap: () {},
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.deepPurple.withOpacity(0.85),
+              Colors.deepPurpleAccent.withOpacity(0.85),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 36),
+            const SizedBox(width: 20),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: textTheme.titleMedium?.copyWith(
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor: colors.surfaceVariant,
-                    valueColor: AlwaysStoppedAnimation(colors.primary),
-                  ),
+                  const SizedBox(height: 6),
+                  Text(desc, style: const TextStyle(color: Colors.white70)),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _exploreCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 32, color: colors.primary),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

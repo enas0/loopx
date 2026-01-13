@@ -1,73 +1,100 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
-///  LIGHT THEME
+/// ================= LIGHT THEME =================
 final ThemeData lightTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.light,
 
-  scaffoldBackgroundColor: Colors.white,
+  scaffoldBackgroundColor: AppColors.lightBackground,
 
   colorScheme: const ColorScheme.light(
-    surface: Colors.white,
+    background: AppColors.lightBackground,
+    surface: AppColors.lightSurface,
 
-    primary: Colors.black,
+    primary: AppColors.accentPurple,
     onPrimary: Colors.white,
 
-    onSurface: Colors.black,
+    onSurface: AppColors.lightText,
   ),
 
+  // ---------- APP BAR ----------
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent,
     elevation: 0,
-    foregroundColor: Colors.black,
+    centerTitle: true,
+    iconTheme: IconThemeData(color: AppColors.lightText),
+    titleTextStyle: TextStyle(
+      color: AppColors.lightText,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
   ),
 
+  // ---------- BOTTOM NAV ----------
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: Colors.white,
-    selectedItemColor: Colors.black,
-    unselectedItemColor: Colors.black,
+    backgroundColor: AppColors.lightBackground,
+    selectedItemColor: AppColors.accentPurple,
+    unselectedItemColor: AppColors.lightSubText,
+    showUnselectedLabels: true,
+    type: BottomNavigationBarType.fixed,
   ),
 
+  // ---------- BUTTONS ----------
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.accentPurple,
       foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
   ),
 );
 
-///  DARK THEME
+/// ================= DARK THEME =================
 final ThemeData darkTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.dark,
 
-  scaffoldBackgroundColor: const Color(0xFF0B0C0F),
+  scaffoldBackgroundColor: AppColors.darkBackground,
 
   colorScheme: const ColorScheme.dark(
-    surface: Color(0xFF0B0C0F),
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
 
-    primary: Colors.white,
-    onPrimary: Colors.black,
+    primary: AppColors.accentPurple,
+    onPrimary: Colors.white,
 
-    onSurface: Colors.white,
+    onSurface: AppColors.darkText,
   ),
 
+  // ---------- APP BAR ----------
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent,
     elevation: 0,
-    foregroundColor: Colors.white,
+    centerTitle: true,
+    iconTheme: IconThemeData(color: AppColors.darkText),
+    titleTextStyle: TextStyle(
+      color: AppColors.darkText,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
   ),
 
+  // ---------- BOTTOM NAV ----------
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: Color(0xFF0B0C0F),
-    selectedItemColor: Colors.white,
-    unselectedItemColor: Colors.white,
+    backgroundColor: AppColors.darkBackground,
+    selectedItemColor: AppColors.accentPurple,
+    unselectedItemColor: AppColors.darkSubText,
+    showUnselectedLabels: true,
+    type: BottomNavigationBarType.fixed,
   ),
 
+  // ---------- BUTTONS ----------
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      backgroundColor: AppColors.accentPurple,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
   ),
 );
