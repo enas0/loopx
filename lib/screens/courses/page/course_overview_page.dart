@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:loopx/widgets/app_bottom_nav.dart';
 import 'lesson_page.dart';
 
@@ -27,46 +26,44 @@ class CourseOverviewPage extends StatelessWidget {
         centerTitle: true,
       ),
 
-      body: FutureBuilder<DocumentSnapshot>(
+      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         future: FirebaseFirestore.instance
             .collection('courses')
             .doc(courseId)
             .get(),
         builder: (context, courseSnapshot) {
-          if (!courseSnapshot.hasData) {
+          if (courseSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final courseData =
-              courseSnapshot.data!.data() as Map<String, dynamic>;
+          if (!courseSnapshot.hasData || !courseSnapshot.data!.exists) {
+            return const Center(child: Text('Course not found'));
+          }
 
-          final String title = courseData['title'];
-          final String description = courseData['description'];
-          final List outcomes = courseData['outcomes'] ?? [];
-          final List resources = courseData['resources'] ?? [];
+          final courseData = courseSnapshot.data!.data()!;
 
-          return FutureBuilder<DocumentSnapshot>(
+          // ✅ SAFE access (NO null crash)
+          final String title = courseData['title']?.toString() ?? courseId;
+          final String track = courseData['track']?.toString() ?? '';
+          final String category = courseData['category']?.toString() ?? '';
+
+          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
                 .get(),
             builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+              int lessonOrder = 1;
+
+              if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                lessonOrder =
+                    userSnapshot.data!.data()?['progress']?['lessonOrder'] ?? 1;
               }
-
-              final userData =
-                  userSnapshot.data!.data() as Map<String, dynamic>?;
-
-              final progress = userData?['progress'] as Map<String, dynamic>?;
-
-              final int lessonOrder = progress?['lessonOrder'] ?? 1;
 
               return _Content(
                 title: title,
-                description: description,
-                outcomes: outcomes,
-                resources: resources,
+                track: track,
+                category: category,
                 courseId: courseId,
                 lessonOrder: lessonOrder,
               );
@@ -86,24 +83,21 @@ class CourseOverviewPage extends StatelessWidget {
 
 class _Content extends StatelessWidget {
   final String title;
-  final String description;
-  final List outcomes;
-  final List resources;
+  final String track;
+  final String category;
   final String courseId;
   final int lessonOrder;
 
   const _Content({
     required this.title,
-    required this.description,
-    required this.outcomes,
-    required this.resources,
+    required this.track,
+    required this.category,
     required this.courseId,
     required this.lessonOrder,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
@@ -124,7 +118,7 @@ class _Content extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$title Course',
+                  title,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -132,61 +126,17 @@ class _Content extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: const TextStyle(color: Colors.white70),
-                ),
+                if (track.isNotEmpty)
+                  Text(
+                    'Track: $track',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                if (category.isNotEmpty)
+                  Text(
+                    'Category: $category',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 36),
-
-          // ================= OUTCOMES =================
-          Text(
-            'What you will learn',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          ...outcomes.map((o) => _bullet(o.toString())),
-
-          const SizedBox(height: 36),
-
-          // ================= RESOURCES =================
-          Text(
-            'Resources',
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          ...resources.map(
-            (res) => Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.link, color: Colors.deepPurple),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      res['title'],
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.open_in_new,
-                    color: colors.onSurfaceVariant,
-                    size: 18,
-                  ),
-                ],
-              ),
             ),
           ),
 
@@ -221,19 +171,6 @@ class _Content extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bullet(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.check_circle, size: 18, color: Colors.deepPurple),
-          SizedBox(width: 12),
         ],
       ),
     );

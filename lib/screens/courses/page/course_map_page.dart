@@ -1,37 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'course_overview_page.dart';
 import 'package:loopx/widgets/app_bottom_nav.dart';
+import 'course_overview_page.dart';
 
-class CourseMapPage extends StatelessWidget {
+class CourseMapPage extends StatefulWidget {
   const CourseMapPage({super.key});
 
-  Future<_CourseMapData> _loadData() async {
-    final user = FirebaseAuth.instance.currentUser;
+  @override
+  State<CourseMapPage> createState() => _CourseMapPageState();
+}
 
-    Map<String, dynamic>? progress;
+class _CourseMapPageState extends State<CourseMapPage> {
+  bool isLoading = true;
+  bool hasError = false;
 
-    if (user != null) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> courses = [];
+  int currentOrder = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMap();
+  }
+
+  Future<void> _loadMap() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      String? currentCourseId;
+
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        currentCourseId = userDoc.data()?['progress']?['courseId'];
+      }
+
+      final snap = await FirebaseFirestore.instance
+          .collection('courses')
+          .orderBy('order')
           .get();
 
-      progress = userDoc.data()?['progress'];
+      courses = snap.docs;
+
+      if (courses.isEmpty) {
+        throw Exception('No courses');
+      }
+
+      // ✅ الحل الصحيح: تحديد الكورس الحالي بدون firstWhere
+      QueryDocumentSnapshot<Map<String, dynamic>>? currentCourse;
+
+      for (final c in courses) {
+        if (c.id == currentCourseId) {
+          currentCourse = c;
+          break;
+        }
+      }
+
+      currentCourse ??= courses.first;
+
+      currentOrder = currentCourse.data()['order'] ?? 1;
+    } catch (e) {
+      hasError = true;
     }
 
-    final coursesSnap = await FirebaseFirestore.instance
-        .collection('courses')
-        .orderBy('order')
-        .get();
-
-    return _CourseMapData(progress: progress, courses: coursesSnap.docs);
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (hasError) {
+      return const Scaffold(
+        body: Center(child: Text('Failed to load learning path')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -41,67 +93,34 @@ class CourseMapPage extends StatelessWidget {
         centerTitle: true,
       ),
 
-      body: FutureBuilder<_CourseMapData>(
-        future: _loadData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        itemCount: courses.length,
+        itemBuilder: (context, index) {
+          final course = courses[index];
+          final data = course.data();
 
-          if (!snapshot.hasData || snapshot.hasError) {
-            return const Center(child: Text('Failed to load courses'));
-          }
+          final int order = data['order'] ?? 0;
 
-          final data = snapshot.data!;
-          final courses = data.courses;
+          final bool isCompleted = order < currentOrder;
+          final bool isUnlocked = order == currentOrder;
 
-          if (courses.isEmpty) {
-            return const Center(child: Text('No courses found'));
-          }
-
-          // ===== تحديد الكورس الحالي =====
-          final String currentCourseId =
-              data.progress?['courseId']?.toString() ?? courses.first.id;
-
-          final QueryDocumentSnapshot currentCourse = courses.firstWhere(
-            (c) => c.id == currentCourseId,
-            orElse: () => courses.first,
-          );
-
-          final int currentOrder =
-              (currentCourse.data() as Map<String, dynamic>)['order'] ?? 1;
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            itemCount: courses.length,
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              final data = course.data() as Map<String, dynamic>;
-
-              final int order = data['order'] ?? 0;
-
-              final bool isCompleted = order < currentOrder;
-              final bool isUnlocked = order == currentOrder;
-
-              return _CourseMapItem(
-                title: data['title']?.toString() ?? course.id,
-                subtitle: data['track']?.toString() ?? '',
-                isUnlocked: isUnlocked,
-                isCompleted: isCompleted,
-                showLine: index != courses.length - 1,
-                onTap: isUnlocked
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                CourseOverviewPage(courseId: course.id),
-                          ),
-                        );
-                      }
-                    : null,
-              );
-            },
+          return _CourseMapItem(
+            title: data['title']?.toString() ?? course.id,
+            subtitle: data['track']?.toString() ?? '',
+            isUnlocked: isUnlocked,
+            isCompleted: isCompleted,
+            showLine: index != courses.length - 1,
+            onTap: isUnlocked
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CourseOverviewPage(courseId: course.id),
+                      ),
+                    );
+                  }
+                : null,
           );
         },
       ),
@@ -109,17 +128,6 @@ class CourseMapPage extends StatelessWidget {
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
   }
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                  MODEL                                     */
-/* -------------------------------------------------------------------------- */
-
-class _CourseMapData {
-  final Map<String, dynamic>? progress;
-  final List<QueryDocumentSnapshot> courses;
-
-  _CourseMapData({required this.progress, required this.courses});
 }
 
 /* -------------------------------------------------------------------------- */
