@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../models/task_model.dart';
+import '../../services/firebase_task_service.dart';
 
 class AddTaskSheet extends StatefulWidget {
   final DateTime selectedDate;
-  final void Function(Task task) onAdd;
+  final Task? existingTask;
 
   const AddTaskSheet({
     super.key,
     required this.selectedDate,
-    required this.onAdd,
+    this.existingTask,
   });
 
   @override
@@ -20,16 +23,29 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
 
+  final FirebaseTaskService _taskService = FirebaseTaskService.instance;
+
   late DateTime _date;
   TimeOfDay _time = TimeOfDay.now();
   RepeatType _repeat = RepeatType.none;
-
   Color _selectedColor = Colors.blue;
+
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _date = widget.selectedDate;
+
+    if (widget.existingTask != null) {
+      final task = widget.existingTask!;
+      _titleController.text = task.title;
+      _descController.text = task.description;
+      _date = task.dateTime;
+      _time = TimeOfDay.fromDateTime(task.dateTime);
+      _repeat = task.repeat;
+      _selectedColor = task.color;
+    }
   }
 
   void _pickDate() async {
@@ -39,43 +55,67 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-
-    if (picked != null) {
-      setState(() => _date = picked);
-    }
+    if (picked != null) setState(() => _date = picked);
   }
 
   void _pickTime() async {
     final picked = await showTimePicker(context: context, initialTime: _time);
-
-    if (picked != null) {
-      setState(() => _time = picked);
-    }
+    if (picked != null) setState(() => _time = picked);
   }
 
-  void _submit() {
-    if (_titleController.text.trim().isEmpty) return;
+  Future<void> _submit() async {
+    if (_isSaving) return;
 
-    final dateTime = DateTime(
-      _date.year,
-      _date.month,
-      _date.day,
-      _time.hour,
-      _time.minute,
-    );
+    // 🔒 تأكد من تسجيل الدخول
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please login first')));
+      return;
+    }
 
-    widget.onAdd(
-      Task(
-        id: const Uuid().v4(),
-        title: _titleController.text,
-        description: _descController.text,
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Task title is required')));
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final dateTime = DateTime(
+        _date.year,
+        _date.month,
+        _date.day,
+        _time.hour,
+        _time.minute,
+      );
+
+      final task = Task(
+        id: widget.existingTask?.id ?? const Uuid().v4(),
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
         dateTime: dateTime,
         repeat: _repeat,
         color: _selectedColor,
-      ),
-    );
+      );
 
-    Navigator.pop(context);
+      if (widget.existingTask == null) {
+        await _taskService.addTask(task);
+      } else {
+        await _taskService.updateTask(task);
+      }
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error saving task: $e')));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -85,7 +125,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         16,
-        16,
+        20,
         16,
         MediaQuery.of(context).viewInsets.bottom + 16,
       ),
@@ -93,38 +133,51 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// TITLE
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Task title'),
+              autofocus: true,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(
+                hintText: 'What needs to be done?',
+                border: InputBorder.none,
+              ),
             ),
 
             const SizedBox(height: 12),
 
+            /// DESCRIPTION
             TextField(
               controller: _descController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: 'Add more details...',
+                border: InputBorder.none,
+              ),
             ),
 
             const SizedBox(height: 16),
 
+            /// DATE & TIME
             Row(
               children: [
-                TextButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_today),
+                ActionChip(
+                  avatar: const Icon(Icons.calendar_today, size: 18),
                   label: Text('${_date.day}/${_date.month}/${_date.year}'),
+                  onPressed: _pickDate,
                 ),
-                TextButton.icon(
-                  onPressed: _pickTime,
-                  icon: const Icon(Icons.access_time),
+                const SizedBox(width: 8),
+                ActionChip(
+                  avatar: const Icon(Icons.access_time, size: 18),
                   label: Text(_time.format(context)),
+                  onPressed: _pickTime,
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
 
-            /// ✅ FIXED: initialValue بدل value
+            /// REPEAT
             DropdownButtonFormField<RepeatType>(
               initialValue: _repeat,
               decoration: const InputDecoration(labelText: 'Repeat'),
@@ -144,17 +197,15 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                 ),
               ],
               onChanged: (value) {
-                if (value != null) {
-                  setState(() => _repeat = value);
-                }
+                if (value != null) setState(() => _repeat = value);
               },
             ),
 
             const SizedBox(height: 16),
 
+            /// COLOR
             const Text('Task color'),
             const SizedBox(height: 8),
-
             Wrap(
               spacing: 8,
               children:
@@ -166,9 +217,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     Colors.red,
                   ].map((color) {
                     return GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedColor = color);
-                      },
+                      onTap: () => setState(() => _selectedColor = color),
                       child: CircleAvatar(
                         backgroundColor: color,
                         child: _selectedColor == color
@@ -181,14 +230,19 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
             const SizedBox(height: 24),
 
+            /// ADD / SAVE BUTTON
             ElevatedButton(
-              onPressed: _submit,
+              onPressed: _isSaving ? null : _submit,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
                 backgroundColor: colors.primary,
                 foregroundColor: colors.onPrimary,
               ),
-              child: const Text('Add Task'),
+              child: _isSaving
+                  ? const CircularProgressIndicator()
+                  : Text(
+                      widget.existingTask == null ? 'Add Task' : 'Save Changes',
+                    ),
             ),
           ],
         ),

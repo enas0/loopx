@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:loopx/theme/theme_controller.dart';
+import 'package:loopx/screens/courses/courses_routes.dart';
+
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
+
 import 'screens/shell/first_page.dart';
 
 void main() async {
@@ -26,10 +29,14 @@ class _MyAppState extends State<MyApp> {
       builder: (_, mode, __) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: mode,
+
           home: const FirstPage(),
+
+          onGenerateRoute: CoursesRoutes.generate,
         );
       },
     );

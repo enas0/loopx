@@ -3,51 +3,55 @@ import '../../models/task_model.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
 
-  const TaskCard({super.key, required this.task});
+  const TaskCard({
+    super.key,
+    required this.task,
+    required this.onDelete,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark
+        ? task.color.withOpacity(0.25)
+        : task.color.withOpacity(0.15);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                task.title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: colors.onPrimaryContainer,
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-              Text(
-                _formatTime(task.dateTime),
-                style: TextStyle(
-                  color: colors.onPrimaryContainer.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-          Icon(Icons.notifications, color: colors.onPrimaryContainer),
-        ],
+                Text(_time(task.dateTime)),
+              ],
+            ),
+            IconButton(icon: const Icon(Icons.delete), onPressed: onDelete),
+          ],
+        ),
       ),
     );
   }
 
-  String _formatTime(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final period = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $period';
+  String _time(DateTime d) {
+    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final m = d.minute.toString().padLeft(2, '0');
+    return '$h:$m ${d.hour >= 12 ? 'PM' : 'AM'}';
   }
 }

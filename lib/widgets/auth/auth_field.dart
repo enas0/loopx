@@ -4,14 +4,14 @@ class AuthField extends StatelessWidget {
   final String hint;
   final bool obscure;
   final TextEditingController? controller;
-  final String? Function(String?)? validator; // ✅ أضفناها
+  final String? Function(String?)? validator;
 
   const AuthField({
     super.key,
     required this.hint,
     this.obscure = false,
     this.controller,
-    this.validator, // ✅
+    this.validator,
   });
 
   Color _withAlpha(Color color, double opacity) {
@@ -23,10 +23,9 @@ class AuthField extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return TextFormField(
-      // ✅ مهم
       controller: controller,
       obscureText: obscure,
-      validator: validator, // ✅ مهم
+      validator: validator,
       style: TextStyle(color: colors.onSurface),
       decoration: InputDecoration(
         hintText: hint,

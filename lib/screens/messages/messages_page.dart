@@ -22,6 +22,21 @@ class MessagesPage extends StatelessWidget {
         'time': '1:10 PM',
       },
       {
+        'name': 'eva ',
+        'message': 'New update is coming soon 🚀',
+        'time': 'Yesterday',
+      },
+      {
+        'name': 'group 2',
+        'message': 'New update is coming soon 🚀',
+        'time': 'Yesterday',
+      },
+      {
+        'name': 'LOOPX Team',
+        'message': 'New update is coming soon 🚀',
+        'time': 'Yesterday',
+      },
+      {
         'name': 'LOOPX Team',
         'message': 'New update is coming soon 🚀',
         'time': 'Yesterday',

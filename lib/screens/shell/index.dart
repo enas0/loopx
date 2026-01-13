@@ -103,7 +103,7 @@ class SecondPage extends StatelessWidget {
   }
 }
 
-/// 🔹 Feature bullet item (Reusable & theme-aware)
+///  Feature bullet item (Reusable & theme-aware)
 class _FeatureItem extends StatelessWidget {
   final String text;
 

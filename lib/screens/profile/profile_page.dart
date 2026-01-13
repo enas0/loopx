@@ -92,7 +92,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ================= SECTION =================
   Widget _section(
     BuildContext context, {
     required String title,
@@ -124,7 +123,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // ================= SKILLS =================
+  // SKILLS
   Widget _skillsSection(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;

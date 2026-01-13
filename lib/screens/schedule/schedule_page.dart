@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/task_model.dart';
-import '../../services/task_service.dart';
+import '../../services/firebase_task_service.dart';
 import '../../widgets/app_bottom_nav.dart';
 import 'add_task_sheet.dart';
 import 'task_card.dart';
@@ -14,11 +14,12 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
-  final TaskService _taskService = TaskService.instance;
+  final FirebaseTaskService _taskService = FirebaseTaskService.instance;
 
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedMonth = DateTime.now();
 
+  // ADD TASK
   void _openAddTaskSheet() {
     showModalBottomSheet(
       context: context,
@@ -27,26 +28,62 @@ class _SchedulePageState extends State<SchedulePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => AddTaskSheet(
-        selectedDate: _selectedDate, // ✅ اليوم المختار
-        onAdd: (Task task) {
-          setState(() {
-            _taskService.add(task);
-            // بعد الإضافة نرجّع التحديد على تاريخ التاسك
-            _selectedDate = task.dateTime;
-            _focusedMonth = DateTime(task.dateTime.year, task.dateTime.month);
-          });
-        },
-      ),
+      builder: (_) => AddTaskSheet(selectedDate: _selectedDate),
     );
+  }
+
+  // EDIT TASK
+  void _openEditTaskSheet(Task task) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) =>
+          AddTaskSheet(selectedDate: task.dateTime, existingTask: task),
+    );
+  }
+
+  // TASK FILTER WITH REPEAT ✅
+  List<Task> _tasksForSelectedDate(List<Task> tasks) {
+    final selected = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    return tasks.where((task) {
+      final taskDate = DateTime(
+        task.dateTime.year,
+        task.dateTime.month,
+        task.dateTime.day,
+      );
+
+      if (_isSameDay(taskDate, selected)) return true;
+
+      switch (task.repeat) {
+        case RepeatType.daily:
+          return selected.isAfter(taskDate);
+
+        case RepeatType.weekly:
+          return selected.isAfter(taskDate) &&
+              selected.weekday == taskDate.weekday;
+
+        case RepeatType.monthly:
+          return selected.isAfter(taskDate) && selected.day == taskDate.day;
+
+        case RepeatType.none:
+          return false;
+      }
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-
-    final List<Task> dayTasks = _taskService.getByDate(_selectedDate);
 
     return Scaffold(
       backgroundColor: colors.surface,
@@ -71,7 +108,7 @@ class _SchedulePageState extends State<SchedulePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            /// ===== Calendar Card =====
+            // CALENDAR
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -81,7 +118,7 @@ class _SchedulePageState extends State<SchedulePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// Month Header
+                  // Month header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -94,10 +131,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       Row(
                         children: [
                           IconButton(
-                            icon: Icon(
-                              Icons.chevron_left,
-                              color: colors.onSurfaceVariant,
-                            ),
+                            icon: const Icon(Icons.chevron_left),
                             onPressed: () {
                               setState(() {
                                 _focusedMonth = DateTime(
@@ -108,10 +142,7 @@ class _SchedulePageState extends State<SchedulePage> {
                             },
                           ),
                           IconButton(
-                            icon: Icon(
-                              Icons.chevron_right,
-                              color: colors.onSurfaceVariant,
-                            ),
+                            icon: const Icon(Icons.chevron_right),
                             onPressed: () {
                               setState(() {
                                 _focusedMonth = DateTime(
@@ -128,7 +159,6 @@ class _SchedulePageState extends State<SchedulePage> {
 
                   const SizedBox(height: 12),
 
-                  /// Week Days
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -144,7 +174,6 @@ class _SchedulePageState extends State<SchedulePage> {
 
                   const SizedBox(height: 12),
 
-                  /// Calendar Grid
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -160,9 +189,7 @@ class _SchedulePageState extends State<SchedulePage> {
                     itemBuilder: (context, index) {
                       final offset = _firstWeekdayOffset(_focusedMonth);
 
-                      if (index < offset) {
-                        return const SizedBox.shrink();
-                      }
+                      if (index < offset) return const SizedBox.shrink();
 
                       final day = index - offset + 1;
                       final date = DateTime(
@@ -193,7 +220,6 @@ class _SchedulePageState extends State<SchedulePage> {
                               color: isSelected
                                   ? colors.onPrimary
                                   : colors.onSurface,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -206,22 +232,45 @@ class _SchedulePageState extends State<SchedulePage> {
 
             const SizedBox(height: 20),
 
-            /// ===== Tasks =====
+            // TASKS
             Expanded(
-              child: dayTasks.isEmpty
-                  ? Center(
+              child: StreamBuilder<List<Task>>(
+                stream: _taskService.watchTasks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final tasks = snapshot.data ?? [];
+                  final dayTasks = _tasksForSelectedDate(tasks);
+
+                  if (dayTasks.isEmpty) {
+                    return Center(
                       child: Text(
                         'No tasks for this day',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: dayTasks.length,
-                      itemBuilder: (_, index) =>
-                          TaskCard(task: dayTasks[index]),
-                    ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: dayTasks.length,
+                    itemBuilder: (_, index) {
+                      final task = dayTasks[index];
+
+                      return TaskCard(
+                        task: task,
+                        onDelete: () async {
+                          await _taskService.deleteTask(task.id);
+                        },
+                        onTap: () => _openEditTaskSheet(task),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -231,7 +280,7 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  // ===== Helpers =====
+  // HELPERS
 
   int _daysInMonth(DateTime date) {
     final firstDayNextMonth = DateTime(date.year, date.month + 1, 1);
@@ -266,7 +315,6 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 }
 
-/// Week Day Widget
 class _WeekDay extends StatelessWidget {
   final String text;
   const _WeekDay(this.text);
@@ -274,7 +322,6 @@ class _WeekDay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-
     return Text(
       text,
       style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
