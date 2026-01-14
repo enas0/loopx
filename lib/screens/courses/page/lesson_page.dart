@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:loopx/widgets/app_bottom_nav.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class LessonPage extends StatefulWidget {
-  final String courseId; // مثال: "Html"
-  final int lessonOrder; // مثال: 1
+  final String courseId;
+  final int lessonOrder;
 
   const LessonPage({
     super.key,
@@ -22,6 +23,8 @@ class _LessonPageState extends State<LessonPage> {
   bool isLoading = true;
   bool hasError = false;
 
+  YoutubePlayerController? _controller;
+
   List<QueryDocumentSnapshot<Map<String, dynamic>>> lessons = [];
   Map<String, dynamic>? lessonData;
 
@@ -31,47 +34,66 @@ class _LessonPageState extends State<LessonPage> {
     _loadLesson();
   }
 
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
   // ================= LOAD LESSON =================
   Future<void> _loadLesson() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final snap = await FirebaseFirestore.instance
           .collection('courses')
-          .doc(widget.courseId) // ⚠️ نفس الاسم بالضبط (Html)
+          .doc(widget.courseId)
           .collection('lessons')
           .orderBy('order')
           .get();
 
-      if (snapshot.docs.isEmpty) {
+      if (snap.docs.isEmpty) {
         hasError = true;
         return;
       }
 
-      lessons = snapshot.docs;
+      lessons = snap.docs;
 
-      QueryDocumentSnapshot<Map<String, dynamic>>? foundLesson;
+      QueryDocumentSnapshot<Map<String, dynamic>>? found;
 
       for (final doc in lessons) {
-        final data = doc.data();
-        final order = data['order'];
-
+        final order = doc.data()['order'];
         if (order is int && order == widget.lessonOrder) {
-          foundLesson = doc;
+          found = doc;
           break;
         }
       }
 
-      if (foundLesson == null) {
+      found ??= lessons.first;
+      lessonData = found.data();
+
+      final videoUrl = lessonData!['videoUrl']?.toString();
+      final videoId = YoutubePlayer.convertUrlToId(videoUrl ?? '');
+
+      if (videoId == null) {
         hasError = true;
         return;
       }
 
-      lessonData = foundLesson.data();
-    } catch (e) {
+      _controller =
+          YoutubePlayerController(
+            initialVideoId: videoId,
+            flags: const YoutubePlayerFlags(
+              autoPlay: false,
+              enableCaption: true,
+            ),
+          )..addListener(() {
+            if (_controller!.value.playerState == PlayerState.ended) {
+              setState(() => videoCompleted = true);
+            }
+          });
+    } catch (_) {
       hasError = true;
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -82,7 +104,7 @@ class _LessonPageState extends State<LessonPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (hasError || lessonData == null) {
+    if (hasError || lessonData == null || _controller == null) {
       return const Scaffold(body: Center(child: Text('Failed to load lesson')));
     }
 
@@ -105,34 +127,13 @@ class _LessonPageState extends State<LessonPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ================= VIDEO =================
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Icon(
-                      Icons.play_circle_fill,
-                      size: 64,
-                      color: Colors.deepPurple,
-                    ),
-                    Positioned(
-                      bottom: 12,
-                      right: 12,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() => videoCompleted = true);
-                        },
-                        child: const Text('Mark video as watched'),
-                      ),
-                    ),
-                  ],
-                ),
+            // ================= VIDEO PLAYER =================
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: YoutubePlayer(
+                controller: _controller!,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: Colors.deepPurple,
               ),
             ),
 
@@ -191,8 +192,8 @@ class _LessonPageState extends State<LessonPage> {
     );
   }
 
-  // ================= NEXT =================
-  Future<void> _goNext(BuildContext context, bool isLast) async {
+  // ================= NEXT LOGIC =================
+  Future<void> _goNext(BuildContext context, bool isLastLesson) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -200,7 +201,8 @@ class _LessonPageState extends State<LessonPage> {
         .collection('users')
         .doc(user.uid);
 
-    if (!isLast) {
+    // ▶️ NEXT LESSON
+    if (!isLastLesson) {
       await usersRef.update({'progress.lessonOrder': widget.lessonOrder + 1});
 
       Navigator.pushReplacement(
@@ -212,14 +214,47 @@ class _LessonPageState extends State<LessonPage> {
           ),
         ),
       );
-    } else {
+      return;
+    }
+
+    // ================= COURSE FINISHED =================
+    final currentCourseSnap = await FirebaseFirestore.instance
+        .collection('courses')
+        .doc(widget.courseId)
+        .get();
+
+    final int currentOrder = currentCourseSnap.data()?['order'] ?? 0;
+
+    final nextCourseSnap = await FirebaseFirestore.instance
+        .collection('courses')
+        .where('order', isEqualTo: currentOrder + 1)
+        .limit(1)
+        .get();
+
+    if (nextCourseSnap.docs.isEmpty) {
       await usersRef.update({'progress.courseCompleted': true});
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Course completed 🎉')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🎉 You finished all courses!')),
+      );
 
       Navigator.pop(context);
+      return;
     }
+
+    final nextCourseId = nextCourseSnap.docs.first.id;
+
+    await usersRef.update({
+      'progress.courseId': nextCourseId,
+      'progress.lessonOrder': 1,
+      'progress.courseCompleted': false,
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LessonPage(courseId: nextCourseId, lessonOrder: 1),
+      ),
+    );
   }
 }

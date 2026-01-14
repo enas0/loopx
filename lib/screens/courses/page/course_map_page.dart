@@ -17,6 +17,7 @@ class _CourseMapPageState extends State<CourseMapPage> {
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> courses = [];
   int currentOrder = 1;
+  String? currentCourseId;
 
   @override
   void initState() {
@@ -27,40 +28,42 @@ class _CourseMapPageState extends State<CourseMapPage> {
   Future<void> _loadMap() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-
-      String? currentCourseId;
-
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        currentCourseId = userDoc.data()?['progress']?['courseId'];
+      if (user == null) {
+        throw Exception('User not logged in');
       }
 
+      // ===== اقرأ progress =====
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final progress = userDoc.data()?['progress'];
+      currentCourseId = progress?['courseId'];
+
+      // ===== اقرأ الكورسات =====
       final snap = await FirebaseFirestore.instance
           .collection('courses')
           .orderBy('order')
           .get();
 
+      if (snap.docs.isEmpty) {
+        throw Exception('No courses found');
+      }
+
       courses = snap.docs;
 
-      if (courses.isEmpty) {
-        throw Exception('No courses');
-      }
+      // ===== حدّد الكورس الحالي =====
+      QueryDocumentSnapshot<Map<String, dynamic>> currentCourse = courses.first;
 
-      // ✅ الحل الصحيح: تحديد الكورس الحالي بدون firstWhere
-      QueryDocumentSnapshot<Map<String, dynamic>>? currentCourse;
-
-      for (final c in courses) {
-        if (c.id == currentCourseId) {
-          currentCourse = c;
-          break;
+      if (currentCourseId != null) {
+        for (final c in courses) {
+          if (c.id == currentCourseId) {
+            currentCourse = c;
+            break;
+          }
         }
       }
-
-      currentCourse ??= courses.first;
 
       currentOrder = currentCourse.data()['order'] ?? 1;
     } catch (e) {
@@ -101,7 +104,6 @@ class _CourseMapPageState extends State<CourseMapPage> {
           final data = course.data();
 
           final int order = data['order'] ?? 0;
-
           final bool isCompleted = order < currentOrder;
           final bool isUnlocked = order == currentOrder;
 

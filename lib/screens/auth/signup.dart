@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../home/entry_page.dart';
+import 'login_page.dart';
+
 import '../../widgets/auth/auth_label.dart';
 import '../../widgets/auth/auth_field.dart';
 import '../../widgets/auth/auth_button.dart';
 import '../../services/validators.dart';
-
-import 'login_page.dart';
-import '../home/home_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -39,7 +39,8 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
-  //  SIGN UP WITH FIREBASE
+  /* ================= SIGN UP ================= */
+
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -49,7 +50,6 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      // Create user in Firebase Auth
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
@@ -57,11 +57,8 @@ class _SignupPageState extends State<SignupPage> {
           );
 
       final user = credential.user;
-      if (user == null) {
-        throw Exception('User creation failed');
-      }
+      if (user == null) throw Exception('User creation failed');
 
-      //  Save user data in Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'uid': user.uid,
         'firstName': _firstNameController.text.trim(),
@@ -71,32 +68,34 @@ class _SignupPageState extends State<SignupPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Go to Home
-      _goToHome();
+      // تأكيد أن الدوكومنت صار جاهز
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+      _goToEntry();
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message ?? 'Authentication error';
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _errorMessage = 'Something went wrong';
       });
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
-  void _goToHome() {
+  void _goToEntry() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(builder: (_) => const EntryPage()),
       (_) => false,
     );
   }
+
+  /* ================= UI ================= */
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +103,6 @@ class _SignupPageState extends State<SignupPage> {
 
     return Scaffold(
       backgroundColor: colors.onSurface,
-
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -121,136 +119,158 @@ class _SignupPageState extends State<SignupPage> {
           ),
         ),
       ),
-
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 75,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(36),
-                      topRight: Radius.circular(36),
-                    ),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const AuthLabel('First Name'),
-                        AuthField(
-                          controller: _firstNameController,
-                          hint: 'First name',
-                          validator: Validators.firstNameValidator,
-                        ),
-
-                        const SizedBox(height: 30),
-                        const AuthLabel('Last Name'),
-                        AuthField(
-                          controller: _lastNameController,
-                          hint: 'Last name',
-                          validator: Validators.lastNameValidator,
-                        ),
-
-                        const SizedBox(height: 30),
-                        const AuthLabel('Email'),
-                        AuthField(
-                          controller: _emailController,
-                          hint: 'user@gmail.com',
-                          validator: Validators.emailValidator,
-                        ),
-
-                        const SizedBox(height: 30),
-                        const AuthLabel('Password'),
-                        AuthField(
-                          controller: _passwordController,
-                          hint: '********',
-                          obscure: true,
-                          validator: Validators.passwordValidator,
-                        ),
-
-                        const SizedBox(height: 30),
-                        const AuthLabel('Confirm Password'),
-                        AuthField(
-                          controller: _confirmPasswordController,
-                          hint: '********',
-                          obscure: true,
-                          validator: (value) {
-                            if (value != _passwordController.text) {
-                              return 'Passwords do not match';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        if (_errorMessage != null) ...[
-                          Text(
-                            _errorMessage!,
-                            style: TextStyle(
-                              color: colors.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        AuthButton(
-                          text: _isLoading ? 'PLEASE WAIT...' : 'SIGN UP',
-                          onPressed: _isLoading ? null : () => _signup(),
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        Center(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginPage(),
-                                ),
-                              );
-                            },
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  const TextSpan(
-                                    text: 'Already have an account? ',
-                                  ),
-                                  TextSpan(
-                                    text: 'Log in',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: colors.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              style: TextStyle(
-                                color: colors.onSurface.withAlpha(200),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(top: 40),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(36),
+                topRight: Radius.circular(36),
               ),
-            );
-          },
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('Personal Info'),
+
+                  _fieldSpacing(),
+                  const AuthLabel('First Name'),
+                  _bigField(
+                    controller: _firstNameController,
+                    hint: 'First name',
+                    validator: Validators.firstNameValidator,
+                  ),
+
+                  _fieldSpacing(),
+                  const AuthLabel('Last Name'),
+                  _bigField(
+                    controller: _lastNameController,
+                    hint: 'Last name',
+                    validator: Validators.lastNameValidator,
+                  ),
+
+                  _sectionSpacing(),
+                  _sectionTitle('Account'),
+
+                  _fieldSpacing(),
+                  const AuthLabel('Email'),
+                  _bigField(
+                    controller: _emailController,
+                    hint: 'user@gmail.com',
+                    validator: Validators.emailValidator,
+                  ),
+
+                  _fieldSpacing(),
+                  const AuthLabel('Password'),
+                  _bigField(
+                    controller: _passwordController,
+                    hint: '********',
+                    obscure: true,
+                    validator: Validators.passwordValidator,
+                  ),
+
+                  _fieldSpacing(),
+                  const AuthLabel('Confirm Password'),
+                  _bigField(
+                    controller: _confirmPasswordController,
+                    hint: '********',
+                    obscure: true,
+                    validator: (value) {
+                      if (value != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(
+                          color: colors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                  AuthButton(
+                    text: _isLoading ? 'PLEASE WAIT...' : 'CREATE ACCOUNT',
+                    onPressed: _isLoading ? null : _signup,
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                        );
+                      },
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(text: 'Already have an account? '),
+                            TextSpan(
+                              text: 'Log in',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: colors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        style: TextStyle(
+                          color: colors.onSurface.withAlpha(180),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  /* ================= HELPERS ================= */
+
+  Widget _bigField({
+    required TextEditingController controller,
+    required String hint,
+    bool obscure = false,
+    String? Function(String?)? validator,
+  }) {
+    return SizedBox(
+      height: 58, // 🔥 حجم أوضح
+      child: AuthField(
+        controller: controller,
+        hint: hint,
+        obscure: obscure,
+        validator: validator,
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _fieldSpacing() => const SizedBox(height: 16);
+  Widget _sectionSpacing() => const SizedBox(height: 32);
 }

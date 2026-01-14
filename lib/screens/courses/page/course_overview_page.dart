@@ -40,12 +40,20 @@ class CourseOverviewPage extends StatelessWidget {
             return const Center(child: Text('Course not found'));
           }
 
-          final courseData = courseSnapshot.data!.data()!;
+          final data = courseSnapshot.data!.data()!;
 
-          // ✅ SAFE access (NO null crash)
-          final String title = courseData['title']?.toString() ?? courseId;
-          final String track = courseData['track']?.toString() ?? '';
-          final String category = courseData['category']?.toString() ?? '';
+          final String title = data['title']?.toString() ?? courseId;
+          final String track = data['track']?.toString() ?? '';
+          final String category = data['category']?.toString() ?? '';
+          final String description = data['description']?.toString() ?? '';
+
+          final List outcomes = (data['outcomes'] is List)
+              ? data['outcomes']
+              : [];
+
+          final List resources = (data['resources'] is List)
+              ? data['resources']
+              : [];
 
           return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: FirebaseFirestore.instance
@@ -64,6 +72,9 @@ class CourseOverviewPage extends StatelessWidget {
                 title: title,
                 track: track,
                 category: category,
+                description: description,
+                outcomes: outcomes,
+                resources: resources,
                 courseId: courseId,
                 lessonOrder: lessonOrder,
               );
@@ -85,6 +96,9 @@ class _Content extends StatelessWidget {
   final String title;
   final String track;
   final String category;
+  final String description;
+  final List outcomes;
+  final List resources;
   final String courseId;
   final int lessonOrder;
 
@@ -92,12 +106,16 @@ class _Content extends StatelessWidget {
     required this.title,
     required this.track,
     required this.category,
+    required this.description,
+    required this.outcomes,
+    required this.resources,
     required this.courseId,
     required this.lessonOrder,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
@@ -125,7 +143,7 @@ class _Content extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 if (track.isNotEmpty)
                   Text(
                     'Track: $track',
@@ -136,9 +154,89 @@ class _Content extends StatelessWidget {
                     'Category: $category',
                     style: const TextStyle(color: Colors.white70),
                   ),
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    description,
+                    style: const TextStyle(color: Colors.white70, height: 1.5),
+                  ),
+                ],
               ],
             ),
           ),
+
+          // ================= OUTCOMES =================
+          if (outcomes.isNotEmpty) ...[
+            const SizedBox(height: 40),
+            Text(
+              'What you will learn',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...outcomes.map(
+              (o) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: Colors.deepPurple,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(o.toString())),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // ================= RESOURCES =================
+          if (resources.isNotEmpty) ...[
+            const SizedBox(height: 40),
+            Text(
+              'Learning Resources',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...resources.map((res) {
+              final title = res['title']?.toString() ?? 'Resource';
+              final url = res['url']?.toString() ?? '';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: colors.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link, color: Colors.deepPurple),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.open_in_new,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
 
           const SizedBox(height: 48),
 
