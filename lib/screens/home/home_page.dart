@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:loopx/screens/courses/page/lesson_page.dart';
+import 'package:loopx/screens/home/hackathons_page.dart';
+import 'package:loopx/screens/home/notifications_page.dart';
+import 'package:loopx/screens/home/trainings_page.dart';
+import 'package:loopx/screens/schedule/schedule_page.dart';
 
 import '../menu/menu_page.dart';
 import '../../widgets/app_bottom_nav.dart';
@@ -23,20 +27,55 @@ class _HomePageState extends State<HomePage>
 
   final tabs = ['Technical', 'Soft Skills', 'Tools'];
 
-  final Map<String, List<Map<String, String>>> data = {
+  /// ===== LOCAL COURSES DATA (NO FIREBASE) =====
+  final Map<String, List<Map<String, dynamic>>> data = {
     'Technical': [
-      {'title': 'HTML & CSS', 'desc': 'Layouts, responsive design'},
-      {'title': 'Bootstrap', 'desc': 'UI components'},
-      {'title': 'JavaScript', 'desc': 'Logic & async programming'},
-      {'title': 'React', 'desc': 'Components & hooks'},
+      {
+        'title': 'HTML & CSS',
+        'desc': 'Layouts, responsive design',
+        'courseId': 'html',
+        'lessonOrder': 1,
+      },
+      {
+        'title': 'JavaScript',
+        'desc': 'Logic & async programming',
+        'courseId': 'javascript',
+        'lessonOrder': 1,
+      },
+      {
+        'title': 'React',
+        'desc': 'Components & hooks',
+        'courseId': 'react',
+        'lessonOrder': 1,
+      },
     ],
     'Soft Skills': [
-      {'title': 'Communication', 'desc': 'Work with teams'},
-      {'title': 'Problem Solving', 'desc': 'Think like an engineer'},
+      {
+        'title': 'Communication',
+        'desc': 'Team collaboration & clarity',
+        'courseId': 'communication',
+        'lessonOrder': 1,
+      },
+      {
+        'title': 'Problem Solving',
+        'desc': 'Think like an engineer',
+        'courseId': 'problem-solving',
+        'lessonOrder': 1,
+      },
     ],
     'Tools': [
-      {'title': 'Git & GitHub', 'desc': 'Version control'},
-      {'title': 'VS Code', 'desc': 'Daily workflow'},
+      {
+        'title': 'Git & GitHub',
+        'desc': 'Version control',
+        'courseId': 'git',
+        'lessonOrder': 1,
+      },
+      {
+        'title': 'VS Code',
+        'desc': 'Daily workflow',
+        'courseId': 'vscode',
+        'lessonOrder': 1,
+      },
     ],
   };
 
@@ -60,8 +99,7 @@ class _HomePageState extends State<HomePage>
     super.dispose();
   }
 
-  // ================= CONTINUE LEARNING LOGIC =================
-
+  // ================= CONTINUE LEARNING  =================
   Future<void> _continueLearning(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -71,12 +109,11 @@ class _HomePageState extends State<HomePage>
         .doc(user.uid)
         .get();
 
-    // مستخدم جديد – ما عنده progress
     if (!doc.exists || !doc.data()!.containsKey('progress')) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const LessonPage(courseId: 'html', lessonOrder: 1),
+          builder: (_) => const LessonPage(courseId: 'Html', lessonOrder: 1),
         ),
       );
       return;
@@ -96,7 +133,6 @@ class _HomePageState extends State<HomePage>
   }
 
   // ================= UI =================
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -120,47 +156,37 @@ class _HomePageState extends State<HomePage>
           'LOOPX',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: const [Icon(Icons.notifications_none), SizedBox(width: 12)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NotificationsPage()),
+              );
+            },
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ================= HERO =================
-            FadeTransition(
-              opacity: _heroAnimation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.1),
-                  end: Offset.zero,
-                ).animate(_heroAnimation),
-                child: _heroCard(context),
-              ),
-            ),
-
+            FadeTransition(opacity: _heroAnimation, child: _heroCard(context)),
             const SizedBox(height: 36),
-
-            // ================= TABS =================
             _tabsRow(colors),
-
             const SizedBox(height: 24),
 
-            // ================= COURSES =================
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Column(
-                key: ValueKey(currentTab),
-                children: currentItems
-                    .map((item) => _courseCard(context, item))
-                    .toList(),
-              ),
+            /// ===== COURSES  =====
+            Column(
+              children: currentItems
+                  .map((item) => _courseCard(context, item))
+                  .toList(),
             ),
 
             const SizedBox(height: 40),
-
-            // ================= GROW =================
             Text(
               'Grow beyond courses',
               style: textTheme.titleLarge?.copyWith(
@@ -173,32 +199,38 @@ class _HomePageState extends State<HomePage>
               icon: Icons.task_alt,
               title: 'Plan your tasks',
               desc: 'Organize your study goals and track progress.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SchedulePage()),
+                );
+              },
             ),
             _bigActionCard(
               icon: Icons.business_center,
               title: 'Company trainings',
               desc: 'Explore internships and real opportunities.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TrainingsPage()),
+                );
+              },
             ),
             _bigActionCard(
               icon: Icons.emoji_events,
               title: 'Hackathons',
               desc: 'Compete, build projects and win prizes.',
-            ),
-
-            const SizedBox(height: 40),
-
-            Center(
-              child: Text(
-                'Consistency beats motivation.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HackathonsPage()),
+                );
+              },
             ),
           ],
         ),
       ),
-
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
@@ -236,13 +268,6 @@ class _HomePageState extends State<HomePage>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-              ),
               onPressed: () => _continueLearning(context),
               child: const Text('Continue Learning'),
             ),
@@ -284,32 +309,45 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _courseCard(BuildContext context, Map<String, String> item) {
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.school, color: Colors.deepPurple),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item['title']!,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(item['desc']!, style: textTheme.bodySmall),
-            ],
+  Widget _courseCard(BuildContext context, Map<String, dynamic> item) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LessonPage(
+              courseId: item['courseId'],
+              lessonOrder: item['lessonOrder'],
+            ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.school, color: Colors.deepPurple),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['title'],
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(item['desc']),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -318,10 +356,11 @@ class _HomePageState extends State<HomePage>
     required IconData icon,
     required String title,
     required String desc,
+    required VoidCallback onTap,
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(26),
-      onTap: () {},
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(22),
@@ -346,7 +385,6 @@ class _HomePageState extends State<HomePage>
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

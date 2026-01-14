@@ -8,94 +8,109 @@ class SecondPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colors.surface,
-
+      backgroundColor: colors.surfaceVariant,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        centerTitle: true,
+        title: Text(
           'LOOPX',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
-
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 32),
-
-              const AppLogo(),
-
-              const SizedBox(height: 24),
-
-              Text(
-                'Welcome to LoopX',
-                style: TextStyle(
-                  color: colors.onSurface,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  /// Logo (DO NOT TOUCH)
+                  const AppLogo(),
 
-              const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-              _FeatureItem(
-                text: 'Build real skills with a clear learning path',
-              ),
-              const SizedBox(height: 12),
-              _FeatureItem(
-                text: 'Apply your knowledge through practical projects',
-              ),
-              const SizedBox(height: 12),
-              _FeatureItem(
-                text:
-                    'Showcase your achievements and get discovered by companies',
-              ),
-
-              const SizedBox(height: 24),
-
-              Text(
-                'What are you waiting for? Start your journey!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.onSurface.withValues(alpha: 0.7),
-                  fontSize: 16,
-                ),
-              ),
-
-              const Spacer(),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SignupPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.onSurface,
-                    foregroundColor: colors.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                  Text(
+                    'Welcome to LoopX',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  child: const Text(
-                    "let's get started",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              ),
 
-              const SizedBox(height: 24),
-            ],
+                  const SizedBox(height: 12),
+
+                  Text(
+                    'Build your skills and showcase your journey',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  _FeatureItem(
+                    text: 'Build real skills with a clear learning path',
+                  ),
+                  const SizedBox(height: 14),
+                  _FeatureItem(
+                    text: 'Apply your knowledge through practical projects',
+                  ),
+                  const SizedBox(height: 14),
+                  _FeatureItem(
+                    text:
+                        'Showcase your achievements and get discovered by companies',
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignupPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Let's get started",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -103,7 +118,7 @@ class SecondPage extends StatelessWidget {
   }
 }
 
-///  Feature bullet item (Reusable & theme-aware)
+/// Feature bullet item (Theme-consistent)
 class _FeatureItem extends StatelessWidget {
   final String text;
 
@@ -116,12 +131,16 @@ class _FeatureItem extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.check, color: Colors.green, size: 20),
-        const SizedBox(width: 8),
+        Icon(Icons.check_circle, color: colors.primary, size: 20),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: colors.onSurface, fontSize: 16),
+            style: TextStyle(
+              color: colors.onSurface,
+              fontSize: 15,
+              height: 1.4,
+            ),
           ),
         ),
       ],

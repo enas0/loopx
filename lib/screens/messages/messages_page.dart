@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../services/chat_service.dart';
+import 'chat_page.dart';
 import '../../widgets/app_bottom_nav.dart';
 
 class MessagesPage extends StatelessWidget {
@@ -7,82 +10,131 @@ class MessagesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    final conversations = [
-      {
-        'name': 'Study Group - Flutter',
-        'message': 'Let’s review widgets today',
-        'time': '2:30 PM',
-      },
-      {
-        'name': 'Ahmed Hassan',
-        'message': 'Did you finish the assignment?',
-        'time': '1:10 PM',
-      },
-      {
-        'name': 'eva ',
-        'message': 'New update is coming soon 🚀',
-        'time': 'Yesterday',
-      },
-      {
-        'name': 'group 2',
-        'message': 'New update is coming soon 🚀',
-        'time': 'Yesterday',
-      },
-      {
-        'name': 'LOOPX Team',
-        'message': 'New update is coming soon 🚀',
-        'time': 'Yesterday',
-      },
-      {
-        'name': 'LOOPX Team',
-        'message': 'New update is coming soon 🚀',
-        'time': 'Yesterday',
-      },
-    ];
+    final chat = ChatService();
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
+      appBar: AppBar(title: const Text('Messages'), centerTitle: true),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: chat.conversations(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Something went wrong', style: textTheme.bodyMedium),
+            );
+          }
 
-      body: ListView.separated(
-        itemCount: conversations.length,
-        separatorBuilder: (_, __) =>
-            Divider(height: 1, color: colors.outlineVariant),
-        itemBuilder: (context, index) {
-          final chat = conversations[index];
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: colors.primaryContainer,
-              child: Icon(Icons.person, color: colors.onPrimaryContainer),
-            ),
-            title: Text(
-              chat['name']!,
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+          final docs = snapshot.data!.docs;
+
+          if (docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 48,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No conversations yet',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            subtitle: Text(
-              chat['message']!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-            trailing: Text(
-              chat['time']!,
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-            onTap: () {},
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              final data = docs[index].data();
+
+              final lastMessage = data['lastMessage'] ?? '';
+              final timestamp = data['lastMessageAt'] as Timestamp?;
+              final timeText = timestamp != null
+                  ? TimeOfDay.fromDateTime(
+                      timestamp.toDate().toLocal(),
+                    ).format(context)
+                  : '';
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatPage(conversationId: docs[index].id),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.outlineVariant),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: colors.primaryContainer,
+                        child: Icon(
+                          Icons.person,
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Conversation',
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timeText,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
-
       bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }

@@ -32,7 +32,6 @@ class _CourseMapPageState extends State<CourseMapPage> {
         throw Exception('User not logged in');
       }
 
-      // ===== اقرأ progress =====
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -41,7 +40,6 @@ class _CourseMapPageState extends State<CourseMapPage> {
       final progress = userDoc.data()?['progress'];
       currentCourseId = progress?['courseId'];
 
-      // ===== اقرأ الكورسات =====
       final snap = await FirebaseFirestore.instance
           .collection('courses')
           .orderBy('order')
@@ -53,7 +51,6 @@ class _CourseMapPageState extends State<CourseMapPage> {
 
       courses = snap.docs;
 
-      // ===== حدّد الكورس الحالي =====
       QueryDocumentSnapshot<Map<String, dynamic>> currentCourse = courses.first;
 
       if (currentCourseId != null) {
@@ -132,9 +129,7 @@ class _CourseMapPageState extends State<CourseMapPage> {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                MAP ITEM                                    */
-/* -------------------------------------------------------------------------- */
+/*      MAP ITEM    */
 
 class _CourseMapItem extends StatelessWidget {
   final String title;

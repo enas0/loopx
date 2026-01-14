@@ -40,7 +40,7 @@ class SelectPathPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔥 HERO
+            //  HERO
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -74,7 +74,7 @@ class SelectPathPage extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // 🔹 PATHS
+            //  PATHS
             _PathCard(
               icon: Icons.web,
               title: 'Frontend Engineer',

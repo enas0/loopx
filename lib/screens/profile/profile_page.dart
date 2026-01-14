@@ -33,7 +33,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadProfile();
   }
 
-  /// 🔹 Load profile from Firestore
   Future<void> _loadProfile() async {
     final doc = await _firestore
         .collection('users')
@@ -55,7 +54,6 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = false);
   }
 
-  /// 🔹 Save profile to Firestore
   Future<void> _saveProfile() async {
     await _firestore
         .collection('users')
@@ -82,7 +80,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -93,7 +90,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text('Profile'),
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
+            icon: Icon(_isEditing ? Icons.check_rounded : Icons.edit_outlined),
             onPressed: () async {
               if (_isEditing) {
                 await _saveProfile();
@@ -104,75 +101,111 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            /// Avatar
-            CircleAvatar(
-              radius: 48,
-              backgroundColor: colors.primaryContainer,
-              child: Icon(
-                Icons.person,
-                size: 48,
-                color: colors.onPrimaryContainer,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            _card(
-              context,
-              title: 'Basic Info',
+            _profileHeader(context),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _field('Name', _nameCtrl),
-                  _field('Bio', _bioCtrl, maxLines: 3),
+                  _infoCard(
+                    context,
+                    icon: Icons.person_outline,
+                    title: 'Basic Info',
+                    child: Column(
+                      children: [
+                        _field('Name', _nameCtrl),
+                        _field('Bio', _bioCtrl, maxLines: 3),
+                      ],
+                    ),
+                  ),
+                  _infoCard(
+                    context,
+                    icon: Icons.school_outlined,
+                    title: 'Education',
+                    child: _field('Education', _educationCtrl, maxLines: 2),
+                  ),
+                  _infoCard(
+                    context,
+                    icon: Icons.work_outline,
+                    title: 'Experience',
+                    child: _field('Experience', _experienceCtrl, maxLines: 3),
+                  ),
+                  _infoCard(
+                    context,
+                    icon: Icons.code_outlined,
+                    title: 'Projects',
+                    child: _field('Projects', _projectsCtrl, maxLines: 2),
+                  ),
+                  _infoCard(
+                    context,
+                    icon: Icons.auto_awesome_outlined,
+                    title: 'Skills',
+                    child: _skillsSection(context),
+                  ),
                 ],
               ),
-            ),
-
-            _card(
-              context,
-              title: 'Education',
-              child: _field('Education', _educationCtrl, maxLines: 2),
-            ),
-
-            _card(
-              context,
-              title: 'Experience',
-              child: _field('Experience', _experienceCtrl, maxLines: 3),
-            ),
-
-            _card(
-              context,
-              title: 'Projects',
-              child: _field('Projects', _projectsCtrl, maxLines: 2),
-            ),
-
-            _card(
-              context,
-              title: 'Skills',
-              child: _field('Skills (comma separated)', _skillsCtrl),
             ),
           ],
         ),
       ),
-
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 
-  /// ================= UI Helpers =================
+  // ================= HEADER =================
 
-  Widget _card(
+  Widget _profileHeader(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 52,
+            backgroundColor: colors.surface,
+            child: Icon(Icons.person, size: 56, color: colors.primary),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _nameCtrl.text.isEmpty ? 'Your Name' : _nameCtrl.text,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _bioCtrl.text.isEmpty
+                ? 'Add a short bio about yourself'
+                : _bioCtrl.text,
+            textAlign: TextAlign.center,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colors.onPrimaryContainer.withOpacity(.85),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= CARD =================
+
+  Widget _infoCard(
     BuildContext context, {
+    required IconData icon,
     required String title,
     required Widget child,
   }) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Container(
       width: double.infinity,
@@ -180,15 +213,23 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.outlineVariant.withOpacity(.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(icon, color: colors.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           child,
@@ -197,21 +238,75 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ================= FIELDS =================
+
   Widget _field(
     String label,
     TextEditingController controller, {
     int maxLines = 1,
   }) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
+        if (_isEditing)
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        if (_isEditing) const SizedBox(height: 6),
         _isEditing
-            ? TextField(controller: controller, maxLines: maxLines)
-            : Text(controller.text.isEmpty ? '-' : controller.text),
+            ? TextField(
+                controller: controller,
+                maxLines: maxLines,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: true,
+                  fillColor: colors.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.outlineVariant),
+                  ),
+                ),
+              )
+            : Text(
+                controller.text.isEmpty ? '-' : controller.text,
+                style: const TextStyle(height: 1.5),
+              ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+
+  // ================= SKILLS =================
+
+  Widget _skillsSection(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    final skills = _skillsCtrl.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (_isEditing) {
+      return _field('Skills (comma separated)', _skillsCtrl);
+    }
+
+    if (skills.isEmpty) {
+      return const Text('-');
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: skills
+          .map(
+            (skill) => Chip(
+              label: Text(skill),
+              backgroundColor: colors.primaryContainer,
+              labelStyle: TextStyle(color: colors.onPrimaryContainer),
+            ),
+          )
+          .toList(),
     );
   }
 }

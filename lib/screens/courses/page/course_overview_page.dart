@@ -88,9 +88,7 @@ class CourseOverviewPage extends StatelessWidget {
   }
 }
 
-/* -------------------------------------------------------------------------- */
 /*                                  CONTENT                                   */
-/* -------------------------------------------------------------------------- */
 
 class _Content extends StatelessWidget {
   final String title;

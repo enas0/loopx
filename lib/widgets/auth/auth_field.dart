@@ -12,6 +12,7 @@ class AuthField extends StatelessWidget {
     this.obscure = false,
     this.controller,
     this.validator,
+    required Icon prefixIcon,
   });
 
   Color _withAlpha(Color color, double opacity) {
